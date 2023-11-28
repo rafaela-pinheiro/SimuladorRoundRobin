@@ -3,12 +3,20 @@
 
 #define NPROC 5
 
+// Estrutura para representar uma operação de I/O
+typedef struct {
+    int tipo;  // 0 - impressora, 1 - disco, 2 - fita
+    int tempo;
+} IO;
+
 //struct para guardar as informações do processo
 typedef struct {
     int PID;
     int tempo_esperado;
     //int prioridade; //talvez nao precisa
-    int status; 
+    int status;
+    IO *listaIO;  // Lista de operações de I/O
+    int num_io;         // Número de operações de I/O
 } processo;
 
 //guarda informações da fila
