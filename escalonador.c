@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define NPROC 5
 #define IO_total 3
@@ -25,7 +26,7 @@ typedef struct {
     int itens[NPROC];
     int inicio;
     int fim;
-}Fila ;
+} Fila ;
 
 
 void inicializaFila(Fila *fila);
@@ -36,44 +37,6 @@ void removeFila(Fila *fila);
 void printFila(Fila *fila);
 int peek(Fila *fila);
 void roundRobin(processo processos[], int quantum);
-
-
-void main(){
-    int i;
-
-    //criando lista de processos;
-    processo processos[NPROC];
-
-    //tempo esperado de cada um dos processos
-    int tempos[NPROC] = {4, 2, 8, 9, 6};
-
-   int IO_list[IO_total][3] = {{0, 1, 3}, {1, 2, 1}, {2, 1, 5}}; // p.PID, tipo, tempo de chegada                            
-
-    //criando os processos e guardando no array de processos
-    for(i=0; i<NPROC; i++){
-        processo p;
-        p.PID = i;
-        p.tempo_esperado = tempos[i];
-        p.status = 0; //pronto
-        p.num_io = 0;
-        p.listaIO = NULL;
-        for(int j = 0; j<IO_total; j++){
-            if(IO_list[j][0]==i){ // é IO desse processo
-              p.num_io++; // inicializa o número de operações de I/O
-              p.listaIO = realloc(p.listaIO, p.num_io * sizeof(IO));
-              p.listaIO[p.num_io - 1].tipo = IO_list[j][1]; // Configura o tipo de I/O
-              p.listaIO[p.num_io - 1].tempo = IO_list[j][2]; // Configura o tempo de chegada
-            }
-        }
-        
-
-        processos[i] = p;
-    }
-    
-    roundRobin(processos, 2);
-}
-
-
 
 void roundRobin(processo processos[], int quantum){
     int tempo_total = 0, i = 0;
@@ -91,7 +54,7 @@ void roundRobin(processo processos[], int quantum){
         insereFila(&altaPrioridade, i);
     }
 
-    printf("TEMO DECORRIDO: 0\n");
+    printf("TEMPO DECORRIDO: 0\n");
     //se a fila de alta prioridade não estiver vazia
     while(processos_concluidos != NPROC){
         int p;
@@ -156,6 +119,7 @@ void roundRobin(processo processos[], int quantum){
         printf("\nTEMPO DECORRIDO: %d\n", tempo_total);
     }
 
+    printf("\nTEMPO DECORRIDO TOTAL: %d\n", tempo_total);
 }
 
 
@@ -193,7 +157,7 @@ void removeFila(Fila *fila) {
         printf("Ops, fila vazia\n");
         return;
     } else {
-        int removedItem = fila->itens[fila->inicio];
+        //int removedItem = fila->itens[fila->inicio];
         //printf("Elemento %d removido da fila\n", removedItem);
         if (fila->inicio == fila->fim) {
             // Se só tiver um elemento na fila
@@ -223,4 +187,74 @@ int peek(Fila *fila) {
     } else {
         return fila->itens[fila->inicio];
     }
+}
+
+int main(int argc, char *argv[]){
+    int i;
+    
+    //tempo esperado de cada um dos processos
+    int tempos[NPROC]; // = {4, 2, 8, 9, 6};
+    
+    // Lendo arquivo de entrada
+    if (argc < 2){
+        printf("Digite: %s <nome do arquivo de entrada>.txt\n", argv[0]);
+        return 0;
+    }
+
+    char nomeArquivo[100];
+    strcpy(nomeArquivo, argv[1]);
+    FILE *arquivo = fopen(nomeArquivo, "r");
+
+    if (arquivo == NULL){
+        printf("Erro ao abrir o arquivo. Encerrando o programa...\n");
+        return 0;
+    }
+    // printf("Arquivo aberto com sucesso!\n");
+    
+    char virgula;
+    for(int j = 0; j < NPROC; j++){
+        if (fscanf(arquivo, "%d%c", &tempos[j], &virgula) == 2){
+            // printf("%d\n", tempos[j]);
+        }
+    }
+
+    int IO_list[IO_total][3]; //= {{0, 1, 3}, {1, 2, 1}, {2, 1, 5}}; // p.PID, tipo, tempo de chegada
+
+    for (int a = 0; a < 3; a++){
+        for(int j = 0; j < IO_total; j++){
+            if(fscanf(arquivo, "%d%c", &IO_list[j][a], &virgula) == 2){
+            // printf("%d\n", IO_list[j][a]);
+            }
+        }
+    }
+
+    fclose(arquivo);
+
+    //criando lista de processos;
+    processo processos[NPROC];
+
+    //criando os processos e guardando no array de processos
+    for(i=0; i<NPROC; i++){
+        processo p;
+        p.PID = i;
+        p.tempo_esperado = tempos[i];
+        p.status = 0; //pronto
+        p.num_io = 0;
+        p.listaIO = NULL;
+        for(int j = 0; j<IO_total; j++){
+            if(IO_list[j][0]==i){ // é IO desse processo
+              p.num_io++; // inicializa o número de operações de I/O
+              p.listaIO = realloc(p.listaIO, p.num_io * sizeof(IO));
+              p.listaIO[p.num_io - 1].tipo = IO_list[j][1]; // Configura o tipo de I/O
+              p.listaIO[p.num_io - 1].tempo = IO_list[j][2]; // Configura o tempo de chegada
+            }
+        }
+        
+
+        processos[i] = p;
+    }
+    
+    roundRobin(processos, 2);
+
+    return 0;
 }
