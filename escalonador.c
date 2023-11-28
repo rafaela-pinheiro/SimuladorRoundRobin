@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #define NPROC 5
+#define IO_total 3
 
 // Estrutura para representar uma operação de I/O
 typedef struct {
