@@ -47,12 +47,26 @@ void main(){
     //tempo esperado de cada um dos processos
     int tempos[NPROC] = {4, 2, 8, 9, 6};
 
+   int IO_list[IO_total][3] = {{0, 1, 3}, {1, 2, 1}, {2, 1, 5}}; // p.PID, tipo, tempo de chegada                            
+
     //criando os processos e guardando no array de processos
     for(i=0; i<NPROC; i++){
         processo p;
         p.PID = i;
         p.tempo_esperado = tempos[i];
         p.status = 0; //pronto
+        p.num_io = 0;
+        p.listaIO = NULL;
+        for(int j = 0; j<IO_total; j++){
+            if(IO_list[j][0]==i){ // é IO desse processo
+              p.num_io++; // inicializa o número de operações de I/O
+              p.listaIO = realloc(p.listaIO, p.num_io * sizeof(IO));
+              p.listaIO[p.num_io - 1].tipo = IO_list[j][1]; // Configura o tipo de I/O
+              p.listaIO[p.num_io - 1].tempo = IO_list[j][2]; // Configura o tempo de chegada
+            }
+        }
+        
+
         processos[i] = p;
     }
     
