@@ -13,6 +13,11 @@ typedef struct {
     int status; //0 para pronto, 1 para terminado
 } processo;
 
+typedef struct{
+    int tipo;
+    int t_chegada;
+} IO;
+
 //guarda informações da fila
 typedef struct {
     int itens[NPROC];
@@ -81,14 +86,16 @@ int main(){
 
 
 void roundRobin(processo processos[], int quantum){
+    int f; // guarda o tipo da fila
     int i, j; //iteradores
     int proc_conc = 0; //processos concluidos
     int ut=0;//unidades de tempo
-    Fila alta;
+    Fila alta, baixa;
     processo p, p_aux, proc_ord[NPROC], p_atual;
 
     //inicializando fila de processos
     inicializaFila(&alta);
+    inicializaFila(&baixa);
  
     //copiando valores
     for(int i = 0; i < NPROC; i++){
@@ -118,20 +125,39 @@ void roundRobin(processo processos[], int quantum){
             }
         }
 
-        processos[peek(&alta)].tempo_esperado--;        
-        p = processos[peek(&alta)];
-        
+        //se a fila de alta prioridade não estiver vazia
+        if (!(filaVazia(&alta))){
+            processos[peek(&alta)].tempo_esperado--; 
+            p = processos[peek(&alta)];
+            printf("Tempo restante do processo %d: %d\n", p.PID, p.tempo_esperado);
+            f = 0;
+        }
+        //caso contrario, se a fila de baixa prioridade nao estiver vazia
+        else if(!(filaVazia(&baixa))){
+            processos[peek(&baixa)].tempo_esperado--;
+            p = processos[peek(&baixa)];
+            printf("Tempo restante do processo %d: %d\n", p.PID, p.tempo_esperado);
+            f = 1;
+        }
+       
         
         if((ut % quantum == 0 && ut != 0) || p.tempo_esperado <= 0){
-            removeFila(&alta);
+            if(f == 0){
+                removeFila(&alta);
+            }
+            else if(f == 1){
+                removeFila(&baixa);
+            }
+
             if(p.tempo_esperado>0){
-                printf("processo %d sofreu preempção\n", p.PID);
+                printf("processo %d sofreu preempção e foi para a fila de baixa prioridade\n", p.PID);
                 printf("tempo restante: %d\n", p.tempo_esperado);
-                insereFila(&alta, p.PID);
+                insereFila(&baixa, p.PID);
             }
             else{
                 proc_conc++;
                 printf("processo %d foi concluido\n", p.PID);
+                processos[p.PID].status = 1;
             }           
         }
         ut++;
