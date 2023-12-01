@@ -4,6 +4,9 @@ com apenas 1 fila de processos */
 #include <stdio.h>
 #include <stdlib.h>
 #define NPROC 5
+#define T_FITA 5
+#define T_DISCO 3
+#define T_IMP 7
 
 // cores para printar no terminal
 #define ANSI_COLOR_RED     "\x1b[31m" // vermelho
@@ -45,7 +48,7 @@ void insereFila(Fila *fila, int valor);
 void removeFila(Fila *fila);
 void printFila(Fila *fila);
 int peek(Fila *fila);
-void roundRobin(processo processos[], int quantum);
+//void roundRobin(processo processos[], int quantum);
 void roundRobinComIO(processo processos[], int quantum);
 
 int main(){
@@ -53,7 +56,7 @@ int main(){
     int i, j; 
 
     // vetores auxiliares
-    int t_chegada[NPROC], t_esperado[NPROC], qntdIO[NPROC];
+    int t_chegada[NPROC], t_esperado[NPROC], qtdIO[NPROC];
 
     // auxiliares para preenchimento da listaIO
     int aux1, aux2;
@@ -74,43 +77,43 @@ int main(){
     printf("Os tempos de chegada sao: %d %d %d %d %d\n", t_chegada[0], t_chegada[1], t_chegada[2], t_chegada[3], t_chegada[4]);
 
     // lendo qntd de operações de IO de cada processo
-    scanf("%d %d %d %d %d", &qntdIO[0], &qntdIO[1], &qntdIO[2], &qntdIO[3], &qntdIO[4]);
+    scanf("%d %d %d %d %d", &qtdIO[0], &qtdIO[1], &qtdIO[2], &qtdIO[3], &qtdIO[4]);
     for (i = 0; i < NPROC; i++){
-        printf("O processos %d tem %d operacao(oes) de IO\n", i, qntdIO[i]);
+        printf("O processos %d tem %d operacao(oes) de IO\n", i, qtdIO[i]);
     }
     
     // criando processos
     printf(ANSI_COLOR_GREEN "Criando processos...\n" ANSI_COLOR_RESET);
 
     for(i = 0; i<NPROC; i++){
-        processo p;
-        p.PID = i;
-        p.tempo_chegada = t_chegada[i];
-        p.tempo_esperado = t_esperado[i];
-        p.status = 0; //pronto
-        p.qntdIO = qntdIO[i];
-        if(p.qntdIO > 0){
+        // processo p;
+        processos[i].PID = i;
+        processos[i].tempo_chegada = t_chegada[i];
+        processos[i].tempo_esperado = t_esperado[i];
+        processos[i].status = 0; //pronto
+        processos[i].qntdIO = qtdIO[i];
+        if(processos[i].qntdIO > 0){
             // se tiver IO, aloca a lista de IO do tamanho adequado
-            IO *listaIOAux = malloc(p.qntdIO * sizeof(IO));
-            if(!listaIOAux){
-                printf("Erro ao alocar memoria\n");
-                exit(1);
-            }
+            processos[i].listaIO = (IO*) malloc(processos[i].qntdIO * sizeof(IO));
+            // if(!listaIOAux){
+            //     printf("Erro ao alocar memoria\n");
+            //     exit(1);
+            // }
             // lendo as operações de IO
-            printf("Processo %d tem %d IO:\n", i, p.qntdIO);
-            for (j = 0; j < p.qntdIO; j++){
+            printf("Processo %d tem %d IO:\n", i, processos[i].qntdIO);
+            for (j = 0; j < processos[i].qntdIO; j++){
                 scanf("%d %d", &aux1, &aux2);
                 printf("\tIO %d: tipo %d, tempo de chegada %d\n", j, aux1, aux2);
-                listaIOAux[j].tipo = aux1;
-                listaIOAux[j].t_chegada = aux2;
+                processos[i].listaIO[j].tipo = aux1;
+                processos[i].listaIO[j].t_chegada = aux2;
             }
-            p.listaIO = listaIOAux;
+            // processos[i].listaIO = listaIOAux;
             
         }
         else {
             printf("Processo %d nao tem IO\n", i);
         }
-        processos[i] = p;
+        // processos[i] = p;
         printf("Processo %d alocado com sucesso!\n", i);
     }
 
@@ -139,52 +142,13 @@ int main(){
     return 0;
 }
 
-int mainAntiga(){
-    int i, t_entrada[NPROC], t_esperado[NPROC];
-    processo processos[NPROC];
-
-    //lendo tempo de entrada
-    FILE *arquivo;
-    arquivo = fopen("entrada.txt", "r");
-
-    if (arquivo == NULL) {
-        fprintf(stderr, "Erro ao abrir o arquivo.\n");
-        return 1; // Termina o programa com código de erro
-    }
-
-    //armazenando tempos de entrada
-    if (fscanf(arquivo, "%d %d %d %d %d", &t_entrada[0], &t_entrada[1], &t_entrada[2], &t_entrada[3], &t_entrada[4]) != 5) {
-        fprintf(stderr, "Erro ao ler os cinco números.\n");
-        fclose(arquivo);
-        return 1; // Termina o programa com código de erro
-    }
-
-    //lendo tempos esperado
-    if (fscanf(arquivo, "%d %d %d %d %d", &t_esperado[0], &t_esperado[1], &t_esperado[2], &t_esperado[3], &t_esperado[4]) != 5) {
-        fprintf(stderr, "Erro ao ler os cinco números.\n");
-        fclose(arquivo);
-        return 1; // Termina o programa com código de erro
-    }
-
-    //criando processos
-    for(i=0; i<NPROC; i++){
-        processo p;
-        p.PID = i;
-        p.tempo_chegada = t_entrada[i];
-        p.tempo_esperado = t_esperado[i];
-        p.status = 0; //pronto
-        processos[i] = p;
-    }
-
-    roundRobin(processos, 2);
-    return 0;
-}
-
 void roundRobinComIO(processo processos[], int quantum){
     int f;              // guarda o tipo da fila
     int i, j;           // iteradores
     int proc_conc = 0;  // processos concluidos
     int ut=0;           // unidades de tempo
+    int count=0;          //variavel de ajuste do quantum em relação ao ut
+    int cont_reg_disco = -1, cont_reg_fita = -1, cont_reg_impressora = -1;        
     Fila alta, baixa;
     Fila disco, fita, impressora;
     // processos
@@ -233,13 +197,25 @@ void roundRobinComIO(processo processos[], int quantum){
             }
         }
 
+        
         // se a fila de alta prioridade não estiver vazia, roda um processo dela
         if (!(filaVazia(&alta))){
             processos[peek(&alta)].tempo_esperado--; // decrementa tempo restante
             p = processos[peek(&alta)]; // 1o processo da fila de alta prioridade
+            count++; 
+            p = processos[peek(&alta)];
+            if(p.tempo_esperado<= 0){
+                count = 0;
+            }
+
+            //decrementando do tempo de chegada de io
+            for(i=0;i<p.qntdIO;i++){
+                p.listaIO[i].t_chegada--;
+            }
             
             if (p.tempo_esperado == 0){
                 printf("Processo %d foi concluido\n", p.PID);
+                count = 0;
             }
             
             printf("Tempo restante do processo %d: %d\n", p.PID, p.tempo_esperado);
@@ -250,13 +226,47 @@ void roundRobinComIO(processo processos[], int quantum){
         // caso contrario, se a fila de baixa prioridade nao estiver vazia, roda um processo dela
         else if(!(filaVazia(&baixa))){
             processos[peek(&baixa)].tempo_esperado--;
+            count++;
             p = processos[peek(&baixa)];
+            if(p.tempo_esperado<= 0){
+                count = 0;
+            }
             printf("Tempo restante do processo %d: %d\n", p.PID, p.tempo_esperado);
+
+            //decrementando do tempo de chegada de io
+            for(i=0;i<p.qntdIO;i++){
+                p.listaIO[i].t_chegada--;
+            }
+
             f = 1;
         }
        
-        
-        if((ut % quantum == 0 && ut != 0) || p.tempo_esperado <= 0){
+       /* olhar as filas de IO do processo atual
+       e ver se algum tempo de chegada = 0 */
+       if(p.qntdIO !=0){
+        for(i=0;i<p.qntdIO;i++){       
+            
+                if(p.listaIO[i].t_chegada == 0){
+                    if(p.listaIO[i].tipo == 0){
+                        printf("Processo %d pediu IO de disco\n", p.PID);
+
+                    }
+                    else if(p.listaIO[i].tipo == 1){
+                        printf("Processo %d pediu IO de fita\n", p.PID);
+
+                    }
+                    else if(p.listaIO[i].tipo == 2){
+                        printf("Processo %d pediu IO de impressora\n", p.PID);
+
+                    }
+                }
+        }
+
+       }
+       
+
+       //se o processo nao saiu pra IO:        
+        if((count == quantum && ut != 0) || p.tempo_esperado <= 0 /*&& p.status != 2*/){
             if(f == 0){ // se tem processo na fila de alta prioridade
                 removeFila(&alta);
             }
@@ -268,95 +278,22 @@ void roundRobinComIO(processo processos[], int quantum){
                 printf(ANSI_COLOR_YELLOW "Processo %d sofreu preempção e foi para a fila de baixa prioridade\n" ANSI_COLOR_RESET, p.PID);
                 printf("Tempo restante: %d\n", p.tempo_esperado);
                 insereFila(&baixa, p.PID);
+                //f = 1;
+                count = 0;
             }
             else{ // se o processo acabou, muda o status
                 proc_conc++;
                 printf(ANSI_COLOR_MAGENTA "Processo %d foi concluido\n" ANSI_COLOR_RESET, p.PID);
                 processos[p.PID].status = 1;
+                count = 0;
             }           
         }
         ut++;
+
     }
 }
 
-void roundRobin(processo processos[], int quantum){
-    int f; // guarda o tipo da fila
-    int i, j; //iteradores
-    int proc_conc = 0; //processos concluidos
-    int ut=0;//unidades de tempo
-    Fila alta, baixa;
-    processo p, p_aux, proc_ord[NPROC]; // , p_atual;
 
-    //inicializando fila de processos
-    inicializaFila(&alta);
-    inicializaFila(&baixa);
- 
-    //copiando valores
-    for(int i = 0; i < NPROC; i++){
-        proc_ord[i] = processos[i];
-    }
-
-    //ordenando processos
-    for(int i = 0; i < NPROC - 1; i++){
-        for(j = 0; j < NPROC - 1; j++){
-            if(proc_ord[j].tempo_chegada > proc_ord[j+1].tempo_chegada){
-                p_aux = proc_ord[j];
-                proc_ord[j] = proc_ord[j+1];
-                proc_ord[j+1] = p_aux;
-                }
-            }
-    }
-
-    //ate aqui tudo certo
-
-    while(proc_conc != NPROC){
-        printf("UT = %d\n", ut);
-        //vendo se tem processo pronto
-        for(i=0; i<NPROC; i++){
-            if(proc_ord[i].tempo_chegada == ut){
-                insereFila(&alta, proc_ord[i].PID);
-                printf(ANSI_COLOR_CYAN "Processo %d entrou\n" ANSI_COLOR_RESET, proc_ord[i].PID);
-            }
-        }
-
-        //se a fila de alta prioridade não estiver vazia
-        if (!(filaVazia(&alta))){
-            processos[peek(&alta)].tempo_esperado--; 
-            p = processos[peek(&alta)];
-            printf("Tempo restante do processo %d: %d\n", p.PID, p.tempo_esperado);
-            f = 0;
-        }
-        //caso contrario, se a fila de baixa prioridade nao estiver vazia
-        else if(!(filaVazia(&baixa))){
-            processos[peek(&baixa)].tempo_esperado--;
-            p = processos[peek(&baixa)];
-            printf("Tempo restante do processo %d: %d\n", p.PID, p.tempo_esperado);
-            f = 1;
-        }
-       
-        
-        if((ut % quantum == 0 && ut != 0) || p.tempo_esperado <= 0){
-            if(f == 0){
-                removeFila(&alta);
-            }
-            else if(f == 1){
-                removeFila(&baixa);
-            }
-
-            if(p.tempo_esperado>0){
-                printf(ANSI_COLOR_YELLOW "Processo %d sofreu preempção e foi para a fila de baixa prioridade\n" ANSI_COLOR_RESET, p.PID);
-                printf("Tempo restante: %d\n", p.tempo_esperado);
-                insereFila(&baixa, p.PID);
-            }
-            else{
-                proc_conc++;
-                printf(ANSI_COLOR_MAGENTA "Processo %d foi concluido\n" ANSI_COLOR_RESET, p.PID);
-                processos[p.PID].status = 1;
-            }           
-        }
-        ut++;
-    }
-}
 
 //---------------------MANUTENÇÃO DE FILA--------------
 
