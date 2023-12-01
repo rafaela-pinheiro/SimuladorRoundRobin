@@ -264,7 +264,7 @@ void roundRobinComIO(processo processos[], int quantum){
 
        }
        
-
+        
        //se o processo nao saiu pra IO:        
         if((count == quantum && ut != 0) || p.tempo_esperado <= 0 /*&& p.status != 2*/){
             if(f == 0){ // se tem processo na fila de alta prioridade
